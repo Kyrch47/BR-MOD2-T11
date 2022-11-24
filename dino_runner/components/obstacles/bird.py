@@ -1,7 +1,7 @@
 import random
 
 from dino_runner.components.obstacles.obstacle import Obstacle
-from dino_runner.utils.constants import BIRD, SCREEN_WIDTH
+from dino_runner.utils.constants import BIRD
 
 
 class Bird(Obstacle):
@@ -9,7 +9,7 @@ class Bird(Obstacle):
         self.image = BIRD[0]
         self.flap_index = 0
         super().__init__(BIRD[0])
-        self.rect.y = random.randint(200, 300)
+        self.rect.y = random.randint(200, 300) # Escolhe uma altura para o passaro
 
     def draw(self, screen):
         if self.flap_index >= 10:
