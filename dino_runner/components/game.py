@@ -1,8 +1,9 @@
 import pygame
 
-from dino_runner.utils.constants import BG, ICON, SCREEN_HEIGHT, SCREEN_WIDTH, TITLE, FPS
+from dino_runner.utils.constants import BG, ICON, SCREEN_HEIGHT, SCREEN_WIDTH, TITLE, FPS, DEFAULT_TYPE
 from dino_runner.components.dinosaur import Dinosaur
 from dino_runner.components.obstacles.obstacle_manager import ObstacleManager
+from dino_runner.components.power_ups.power_up_manager import PowerUpManager
 
 FONT_STYLE = "freesansbold.ttf"
 
@@ -23,6 +24,7 @@ class Game:
         self.y_pos_bg = 380
         self.player = Dinosaur()
         self.obstacle_manager = ObstacleManager()
+        self.power_up_manager = PowerUpManager()
 
     def execute(self):
         self.running = True
@@ -37,6 +39,7 @@ class Game:
         # Game loop: events - update - draw
         self.playing = True
         self.obstacle_manager.reset_obstacles()
+        self.power_up_manager.reset_power_ups()
         self.score = 0
         self.game_speed = 20
         while self.playing:
@@ -55,6 +58,7 @@ class Game:
         self.player.update(user_input)
         self.obstacle_manager.update(self)
         self.update_score()
+        self.power_up_manager.update(self.score, self.game_speed, self.player)
 
     def update_score(self):
         self.score += 1
@@ -69,6 +73,8 @@ class Game:
         self.player.draw(self.screen)
         self.obstacle_manager.draw(self.screen)
         self.draw_score()
+        self.draw_power_up_time()
+        self.power_up_manager.draw(self.screen)
         pygame.display.update()
         pygame.display.flip()
 
@@ -82,15 +88,29 @@ class Game:
 
         self.x_pos_bg -= self.game_speed
 
-    def render_text(self, pos_x, pos_y, text, value=""):
-        font = pygame.font.Font(FONT_STYLE, 22)
-        text = font.render(f"{text}{value}", True, (0, 0, 0))
+    def render_text(self, pos_x, pos_y, text, font_size=22):
+        font = pygame.font.Font(FONT_STYLE, font_size)
+        text = font.render(f"{text}", True, (0, 0, 0))
         text_rect = text.get_rect()
         text_rect.center = (pos_x, pos_y)
         self.screen.blit(text, text_rect)
 
     def draw_score(self):
-        self.render_text(1000, 50, "Score: ", self.score)
+        self.render_text(1000, 50, f"Score: {self.score}")
+
+    def draw_power_up_time(self):
+        if self.player.has_power_up:
+            time_to_show = round((self.player.power_up_time - pygame.time.get_ticks()) / 1000, 2)
+            if time_to_show >= 0:
+                self.render_text(
+                    500,
+                    40,
+                    f"{self.player.type.capitalize()} enabled for {time_to_show} seconds",
+                    18
+                )
+            else:
+                self.player.has_power_up = False
+                self.player.type = DEFAULT_TYPE
 
     def handle_events_on_menu(self):
         for event in pygame.event.get():
@@ -111,8 +131,8 @@ class Game:
             self.screen.blit(ICON, (half_screen_width - 50, half_screen_height - 150))
             self.render_text(half_screen_width, 100, "You died!")
             self.render_text(half_screen_width, 300, "Press any key to restart.")
-            self.render_text(half_screen_width, 400, "Your score: ", self.score)
-            self.render_text(half_screen_width, 440, "Deaths: ", self.death_count)
+            self.render_text(half_screen_width, 400, f"Your score: {self.score}")
+            self.render_text(half_screen_width, 440, f"Deaths: {self.death_count}")
         
         pygame.display.update()
         self.handle_events_on_menu()
